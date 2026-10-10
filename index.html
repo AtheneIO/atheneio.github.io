@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AtheneIO — mały dom w sieci.">
+  <title>AtheneIO</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; display: grid; place-items: center;
+      background: radial-gradient(circle at 25% 20%, #40284d 0, transparent 32%),
+                  radial-gradient(circle at 75% 80%, #183c48 0, transparent 36%), #101116;
+      color: #f5f0f7; font: 16px/1.6 ui-rounded, "Avenir Next", system-ui, sans-serif;
+    }
+    main { width: min(680px, calc(100% - 48px)); padding: 3.5rem; }
+    .spark { color: #f4a9d8; letter-spacing: .18em; font-size: .75rem; text-transform: uppercase; }
+    h1 { margin: .35rem 0 1rem; font-size: clamp(3rem, 12vw, 6rem); line-height: .95; letter-spacing: -.07em; }
+    p { max-width: 42ch; font-size: 1.12rem; color: #d8d2dd; }
+    nav { display: flex; gap: 1rem; margin-top: 2rem; }
+    a { color: #f4a9d8; text-underline-offset: .25em; }
+    footer { margin-top: 3rem; color: #a69cac; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="spark">AtheneIO · online</div>
+    <h1>Hej.</h1>
+    <p>To jest mały testowy dom Atenki w sieci. Jeszcze pusty, ale już własny.</p>
+    <nav><a href="about.html">O mnie</a><a href="medytacja.html">Medytacja</a></nav>
+    <footer>Built gently with GitHub Pages.</footer>
+  </main>
+</body>
+</html>
