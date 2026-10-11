@@ -102,14 +102,14 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
     };
 
     const pointOnFiber = (fiber, progress, time, influenceX, influenceY) => {
-      const wave = time * 0.000055 * fiber.drift;
+      const wave = time * 0.00011 * fiber.drift;
       const longitudinal = progress * 2 - 1;
       const taper = 0.78 + 0.22 * Math.cos(longitudinal * Math.PI * 0.62);
       const angle = fiber.angle + longitudinal * 0.72 + Math.sin(wave + fiber.phase) * 0.12;
       const asymmetry = Math.sin(angle * 3.0 + fiber.phase) * 0.3
         + Math.cos(angle * 5.0 - wave * 1.8) * 0.16;
       const radius = (fiber.radius + asymmetry + Math.sin(longitudinal * 4.6 + wave * 1.7) * 0.07) * taper;
-      const pulse = Math.sin(time * 0.00007 + fiber.phase + progress * 5.0) * 0.035;
+      const pulse = Math.sin(time * 0.00013 + fiber.phase + progress * 5.0) * 0.05;
 
       return {
         x: radius * Math.cos(angle) * 0.92 + pulse + influenceX * (0.12 + taper * 0.08),
@@ -147,16 +147,16 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
       lastFrame = time;
 
       const idle = !pointerActive || time - lastPointerMove > 1100;
-      const autonomousX = Math.sin(time * 0.00004) * 0.07;
-      const autonomousY = Math.cos(time * 0.000035) * 0.05;
+      const autonomousX = Math.sin(time * 0.00009) * 0.12;
+      const autonomousY = Math.cos(time * 0.000075) * 0.09;
       pointer.lerp(idle ? new THREE.Vector2(autonomousX, autonomousY) : target, 0.018);
       rotation.lerp(pointer, 0.022);
 
       fibers.rotation.y += (0.34 + rotation.x * 0.14 - fibers.rotation.y) * 0.013;
       fibers.rotation.x += (-0.18 - rotation.y * 0.1 - fibers.rotation.x) * 0.013;
-      fibers.rotation.z = Math.sin(time * 0.000035) * 0.03 + rotation.x * 0.025;
-      fibers.position.y = baseY + Math.sin(time * 0.00005) * 0.06 + rotation.y * 0.05;
-      fibers.position.x = baseX + Math.cos(time * 0.00004) * 0.045 + rotation.x * 0.05;
+      fibers.rotation.z = Math.sin(time * 0.000075) * 0.05 + rotation.x * 0.025;
+      fibers.position.y = baseY + Math.sin(time * 0.0001) * 0.09 + rotation.y * 0.05;
+      fibers.position.x = baseX + Math.cos(time * 0.00009) * 0.07 + rotation.x * 0.05;
 
       updateFibers(time);
       renderer.render(scene, camera);
