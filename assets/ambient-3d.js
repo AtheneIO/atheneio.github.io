@@ -53,7 +53,9 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
       blending: THREE.AdditiveBlending,
     });
     const fibers = new THREE.LineSegments(geometry, material);
-    fibers.position.set(mobile ? 0.35 : 1.8, mobile ? -0.15 : -0.1, 0);
+    let baseX = mobile ? 0.35 : 2.2;
+    const baseY = mobile ? -0.15 : -0.1;
+    fibers.position.set(baseX, baseY, 0);
     fibers.rotation.set(-0.18, 0.34, 0.08);
     scene.add(fibers);
 
@@ -75,6 +77,7 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      baseX = mobile ? 0.35 : Math.min(3.05, 1.72 + camera.aspect * 0.53);
     };
 
     const movePointer = (event) => {
@@ -151,8 +154,8 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
       fibers.rotation.y += (0.34 + rotation.x * 0.32 - fibers.rotation.y) * 0.025;
       fibers.rotation.x += (-0.18 - rotation.y * 0.24 - fibers.rotation.x) * 0.025;
       fibers.rotation.z = Math.sin(time * 0.00014) * 0.08 + rotation.x * 0.06;
-      fibers.position.y = (mobile ? -0.15 : -0.1) + Math.sin(time * 0.00023) * 0.16 + rotation.y * 0.16;
-      fibers.position.x = (mobile ? 0.35 : 1.8) + Math.cos(time * 0.00018) * 0.12 + rotation.x * 0.14;
+      fibers.position.y = baseY + Math.sin(time * 0.00023) * 0.16 + rotation.y * 0.16;
+      fibers.position.x = baseX + Math.cos(time * 0.00018) * 0.12 + rotation.x * 0.14;
 
       updateFibers(time);
       renderer.render(scene, camera);
