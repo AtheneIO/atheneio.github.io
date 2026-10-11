@@ -19,50 +19,49 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
     document.body.prepend(canvas);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
     camera.position.set(0, 0, 9);
 
     const mobile = coarsePointer.matches;
+    const fiberCount = mobile ? 52 : 104;
+    const segments = mobile ? 15 : 22;
+    const verticesPerFiber = segments * 2;
+    const vertexCount = fiberCount * verticesPerFiber;
+    const positions = new Float32Array(vertexCount * 3);
+    const colors = new Float32Array(vertexCount * 3);
+    const base = Array.from({ length: fiberCount }, (_, index) => ({
+      angle: (index / fiberCount) * Math.PI * 2,
+      phase: (index * 1.61803398875) % (Math.PI * 2),
+      drift: 0.45 + ((index * 0.37) % 0.9),
+      radius: 1.15 + ((index * 0.73) % 1.3),
+    }));
+
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.2 : 1.45));
 
-    const geometry = new THREE.IcosahedronGeometry(mobile ? 2.15 : 2.55, mobile ? 2 : 3);
-    const material = new THREE.MeshPhysicalMaterial({
-      color: 0x9e6ca2,
-      emissive: 0x180f27,
-      emissiveIntensity: 0.42,
-      roughness: 0.34,
-      metalness: 0.06,
-      clearcoat: 0.58,
-      clearcoatRoughness: 0.3,
-      iridescence: 0.38,
-      iridescenceIOR: 1.22,
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const material = new THREE.LineBasicMaterial({
+      vertexColors: true,
       transparent: true,
-      opacity: 0.66,
-      side: THREE.DoubleSide,
+      opacity: mobile ? 0.28 : 0.34,
       depthWrite: false,
+      depthTest: false,
+      blending: THREE.AdditiveBlending,
     });
-    const form = new THREE.Mesh(geometry, material);
-    form.position.set(mobile ? 0.55 : 1.65, mobile ? 0.05 : -0.15, 0);
-    form.rotation.set(-0.22, 0.3, 0.12);
-    scene.add(form);
+    const fibers = new THREE.LineSegments(geometry, material);
+    fibers.position.set(mobile ? 0.35 : 1.8, mobile ? -0.15 : -0.1, 0);
+    fibers.rotation.set(-0.18, 0.34, 0.08);
+    scene.add(fibers);
 
-    const key = new THREE.PointLight(0xf4a9d8, 18, 18, 2);
-    key.position.set(-3.6, 3.8, 5.5);
-    scene.add(key);
-
-    const fill = new THREE.PointLight(0x5fb7c4, 12, 16, 2);
-    fill.position.set(4, -2.6, 3.2);
-    scene.add(fill);
-
-    const rim = new THREE.DirectionalLight(0xd9b0ff, 1.2);
-    rim.position.set(0, -3, -2);
-    scene.add(rim);
-
+    const pink = new THREE.Color(0xf4a9d8);
+    const violet = new THREE.Color(0xa985c5);
+    const cyan = new THREE.Color(0x6fb9c7);
+    const color = new THREE.Color();
     const target = new THREE.Vector2();
-    const desiredPointer = new THREE.Vector2();
     const pointer = new THREE.Vector2();
     const rotation = new THREE.Vector2();
     let pointerActive = false;
@@ -73,8 +72,6 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
     const resize = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5);
-      renderer.setPixelRatio(pixelRatio);
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
@@ -90,27 +87,74 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
       lastPointerMove = performance.now();
     };
 
+    const writeVertex = (offset, x, y, z, mix) => {
+      positions[offset] = x;
+      positions[offset + 1] = y;
+      positions[offset + 2] = z;
+      color.copy(pink).lerp(violet, mix * 0.55).lerp(cyan, Math.max(0, mix - 0.58) * 1.55);
+      colors[offset] = color.r;
+      colors[offset + 1] = color.g;
+      colors[offset + 2] = color.b;
+    };
+
+    const pointOnFiber = (fiber, progress, time, influenceX, influenceY) => {
+      const wave = time * 0.00022 * fiber.drift;
+      const longitudinal = progress * 2 - 1;
+      const taper = 0.55 + 0.45 * Math.cos(longitudinal * Math.PI * 0.62);
+      const angle = fiber.angle + longitudinal * 0.72 + Math.sin(wave + fiber.phase) * 0.28;
+      const asymmetry = Math.sin(angle * 3.0 + fiber.phase) * 0.3
+        + Math.cos(angle * 5.0 - wave * 1.8) * 0.16;
+      const radius = (fiber.radius + asymmetry + Math.sin(longitudinal * 4.6 + wave * 1.7) * 0.17) * taper;
+      const pulse = Math.sin(time * 0.00034 + fiber.phase + progress * 5.0) * 0.11;
+
+      return {
+        x: radius * Math.cos(angle) * 0.92 + pulse + influenceX * (0.22 + taper * 0.16),
+        y: longitudinal * (mobile ? 2.0 : 2.38) + Math.sin(angle * 2.2 + wave) * 0.32 + influenceY * 0.24,
+        z: radius * Math.sin(angle) * 0.82 + Math.cos(longitudinal * 3.8 + wave) * 0.3,
+      };
+    };
+
+    const updateFibers = (time) => {
+      const influenceX = pointer.x * 0.42;
+      const influenceY = pointer.y * 0.34;
+      let offset = 0;
+
+      for (let index = 0; index < fiberCount; index += 1) {
+        const fiber = base[index];
+        const mix = index / Math.max(1, fiberCount - 1);
+
+        for (let segment = 0; segment < segments; segment += 1) {
+          const start = pointOnFiber(fiber, segment / segments, time, influenceX, influenceY);
+          const end = pointOnFiber(fiber, (segment + 1) / segments, time, influenceX, influenceY);
+          writeVertex(offset, start.x, start.y, start.z, mix);
+          offset += 3;
+          writeVertex(offset, end.x, end.y, end.z, mix);
+          offset += 3;
+        }
+      }
+
+      geometry.attributes.position.needsUpdate = true;
+      geometry.attributes.color.needsUpdate = true;
+    };
+
     const animate = (time) => {
       frameId = requestAnimationFrame(animate);
       if (time - lastFrame < 33) return;
       lastFrame = time;
 
       const idle = !pointerActive || time - lastPointerMove > 1100;
-      const autonomousX = Math.sin(time * 0.00019) * 0.16;
-      const autonomousY = Math.cos(time * 0.00015) * 0.11;
-      const desiredX = idle ? autonomousX : target.x * 0.28;
-      const desiredY = idle ? autonomousY : target.y * 0.2;
+      const autonomousX = Math.sin(time * 0.00016) * 0.18;
+      const autonomousY = Math.cos(time * 0.00013) * 0.13;
+      pointer.lerp(idle ? new THREE.Vector2(autonomousX, autonomousY) : target, 0.042);
+      rotation.lerp(pointer, 0.047);
 
-      desiredPointer.set(desiredX, desiredY);
-      pointer.lerp(desiredPointer, 0.045);
-      rotation.lerp(pointer, 0.052);
+      fibers.rotation.y += (0.34 + rotation.x * 0.32 - fibers.rotation.y) * 0.025;
+      fibers.rotation.x += (-0.18 - rotation.y * 0.24 - fibers.rotation.x) * 0.025;
+      fibers.rotation.z = Math.sin(time * 0.00014) * 0.08 + rotation.x * 0.06;
+      fibers.position.y = (mobile ? -0.15 : -0.1) + Math.sin(time * 0.00023) * 0.16 + rotation.y * 0.16;
+      fibers.position.x = (mobile ? 0.35 : 1.8) + Math.cos(time * 0.00018) * 0.12 + rotation.x * 0.14;
 
-      form.rotation.y += (0.28 + rotation.x * 0.62 - form.rotation.y) * 0.025;
-      form.rotation.x += (-0.22 - rotation.y * 0.46 - form.rotation.x) * 0.025;
-      form.rotation.z = Math.sin(time * 0.00017) * 0.1 + rotation.x * 0.08;
-      form.position.y = (mobile ? 0.05 : -0.15) + Math.sin(time * 0.00026) * 0.2 + rotation.y * 0.24;
-      form.position.x = (mobile ? 0.55 : 1.65) + Math.cos(time * 0.00021) * 0.18 + rotation.x * 0.2;
-
+      updateFibers(time);
       renderer.render(scene, camera);
     };
 
@@ -124,6 +168,7 @@ if (!reducedMotion.matches && typeof WebGLRenderingContext !== 'undefined') {
     };
 
     resize();
+    updateFibers(0);
     window.addEventListener('resize', resize, { passive: true });
     window.addEventListener('pointermove', movePointer, { passive: true });
     document.addEventListener('visibilitychange', visibility);
