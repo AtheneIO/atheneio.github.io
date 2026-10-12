@@ -68,15 +68,18 @@
   }
 
   function showLoadError() {
-    let error = content.querySelector('.route-error');
-    if (!error) {
-      error = document.createElement('p');
-      error.className = 'route-error';
-      error.setAttribute('role', 'alert');
-      const reader = content.querySelector('.route-reader') || content;
-      reader.append(error);
-    }
-    error.textContent = 'Nie udało się wczytać tej zakładki. Spróbuj ponownie.';
+    content.innerHTML = `
+      <section class="route-top" aria-labelledby="page-title">
+        <div class="spark">AtheneIO</div>
+        <h1 id="page-title" tabindex="-1">Nie udało się wczytać zakładki</h1>
+      </section>
+      <section class="route-bottom">
+        <div class="route-reader"><p class="route-error" role="alert">Spróbuj ponownie albo wróć na stronę główną.</p></div>
+        <nav class="site-nav" aria-label="Główna nawigacja"><a data-route href="index.html">Strona główna</a></nav>
+      </section>`;
+    document.title = 'Błąd ładowania · AtheneIO';
+    activateContent();
+    focusRoute();
   }
 
   async function navigate(rawUrl, { push = false } = {}) {
