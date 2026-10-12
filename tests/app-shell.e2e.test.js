@@ -8,7 +8,7 @@ let chromium;
 try {
   ({ chromium } = require('playwright'));
 } catch {
-  test('Chromium SPA navigation regression', { skip: 'run with npm exec --package=playwright -- node --test tests/app-shell.e2e.test.js' }, () => {});
+  test('Chromium SPA navigation regression', { skip: 'install Playwright, then run node --test tests/app-shell.e2e.test.js' }, () => {});
 }
 
 const root = path.resolve(__dirname, '..');
