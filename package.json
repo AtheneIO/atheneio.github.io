@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test:layout": "playwright test tests/layout-stability.spec.js --reporter=line --workers=1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
+}
