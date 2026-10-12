@@ -35,6 +35,15 @@ test('the router uses fetch, DOMParser and History API without replacing body', 
   assert.doesNotMatch(source, /document\.body\.innerHTML/);
 });
 
+test('same-document hash links bypass SPA routing and failed route loads replace stale content', () => {
+  const source = fs.readFileSync(path.join(root, 'assets', 'app-shell.js'), 'utf8');
+  assert.match(source, /isSameDocumentHash/);
+  assert.match(source, /isSameDocumentHash\(anchor\)\s*\|\|/);
+  assert.match(source, /url\.hash && documentPath\(url\) === renderedDocumentPath/);
+  assert.match(source, /Nie udało się wczytać zakładki/);
+  assert.match(source, /content\.innerHTML = `/);
+});
+
 test('shared CSS reserves a readable upper/lower content region around the biorhythm band', () => {
   const css = fs.readFileSync(path.join(root, 'assets', 'site.css'), 'utf8');
   assert.match(css, /grid-template-rows/);

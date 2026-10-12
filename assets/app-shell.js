@@ -7,6 +7,7 @@
 
   let request = null;
   let navigationId = 0;
+  let renderedDocumentPath = `${location.pathname}${location.search}`;
 
   const isLocalPage = (anchor) => {
     const url = new URL(anchor.href, location.href);
@@ -14,6 +15,9 @@
   };
 
   const routePath = (url) => `${url.pathname}${url.search}${url.hash}`;
+  const documentPath = (url) => `${url.pathname}${url.search}`;
+  const isSameDocumentHash = (anchor) => Boolean(anchor.hash)
+    && anchor.href.slice(0, anchor.href.indexOf('#')) === location.href.split('#', 1)[0];
 
   function setActiveLink() {
     const current = location.pathname.split('/').pop() || 'index.html';
@@ -98,6 +102,7 @@
       if (id !== navigationId) return;
 
       content.innerHTML = nextContent.innerHTML;
+      renderedDocumentPath = documentPath(url);
       document.title = parsed.title || document.title;
       const description = parsed.querySelector('meta[name="description"]')?.content;
       const descriptionNode = document.querySelector('meta[name="description"]');
@@ -115,11 +120,15 @@
   document.addEventListener('click', (event) => {
     const anchor = event.target.closest('a[href]');
     if (!anchor || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    if (anchor.target || anchor.hasAttribute('download') || !isLocalPage(anchor)) return;
+    if (anchor.target || anchor.hasAttribute('download') || isSameDocumentHash(anchor) || !isLocalPage(anchor)) return;
     event.preventDefault();
     navigate(anchor.href, { push: true });
   });
 
-  window.addEventListener('popstate', () => navigate(location.href));
+  window.addEventListener('popstate', () => {
+    const url = new URL(location.href);
+    if (url.hash && documentPath(url) === renderedDocumentPath) return;
+    navigate(url.href);
+  });
   activateContent();
 })();
