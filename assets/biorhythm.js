@@ -148,7 +148,7 @@
 
   document.addEventListener('visibilitychange', () => {
     paused = document.hidden;
-    if (!paused) { lastFetch = -interval; frame = requestAnimationFrame(draw); }
+    if (!paused) { lastFetch = -pollIntervalMs; frame = requestAnimationFrame(draw); }
   });
   window.addEventListener('resize', resize, { passive: true });
   resize();

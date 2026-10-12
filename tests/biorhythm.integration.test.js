@@ -78,6 +78,9 @@ async function harness({ coarse = false, width = 1280, dpr = 2, samples }) {
     target: window.__atheneBiorhythmTest.target,
     parse: window.__atheneBiorhythmTest.parse,
     setClock(value) { clock = value; },
+    setHidden(value) { document.hidden = value; },
+    dispatchVisibilityChange() { listeners.visibilitychange(); },
+    pendingFrames() { return frames.length; },
   };
 }
 
@@ -105,6 +108,29 @@ test('exhaustion → reset changes the oscillator field after a fresh JSON revis
     assert.match(request.url, /\?_=/, 'each read must carry a cache-busting query');
   }
   assert.notEqual(h.fetches[0].url, h.fetches[1].url, 'successive reads must not reuse a cached URL');
+});
+
+test('visibility restore resumes animation and immediately refreshes biorhythm data', async () => {
+  const start = 1_790_000_000_000;
+  const h = await harness({
+    samples: [sample(start, 20, 30), sample(start + 1_000, 80, 90)],
+  });
+
+  h.setHidden(true);
+  h.dispatchVisibilityChange();
+  h.draw(0);
+  assert.equal(h.pendingFrames(), 0, 'hidden tab must stop animation scheduling');
+
+  h.setClock(start + 1_000);
+  h.setHidden(false);
+  assert.doesNotThrow(() => h.dispatchVisibilityChange(), 'returning to the tab must not throw a ReferenceError');
+  assert.equal(h.pendingFrames(), 1, 'visible tab must resume animation');
+  h.draw(1_000);
+  await new Promise(setImmediate);
+
+  assert.equal(h.fetches.length, 2, 'returning to the tab must read current data immediately');
+  assert.equal(h.target.session, 0.8);
+  assert.equal(h.target.weekly, 0.9);
 });
 
 test('freshness remains synced through the publication interval and turns stale after 25 minutes', async () => {
