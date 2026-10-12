@@ -5,26 +5,68 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AtheneIO — mały dom w sieci.">
   <title>AtheneIO</title>
-  <link rel="stylesheet" href="assets/site.css">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      background: radial-gradient(circle at 25% 20%, #40284d 0, transparent 32%),
+                  radial-gradient(circle at 75% 80%, #183c48 0, transparent 36%), #101116;
+      color: #f5f0f7;
+      font: 16px/1.6 ui-rounded, "Avenir Next", system-ui, sans-serif;
+    }
+    main {
+      width: min(680px, calc(100% - 48px));
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: clamp(1rem, 3vh, 2.5rem) 0;
+      display: grid;
+      grid-template-rows: 42fr 28fr 30fr;
+    }
+    .intro {
+      align-self: center;
+      transform: translateY(clamp(3.75rem, 6vh, 4.5rem));
+    }
+    .spark { color: #f4a9d8; letter-spacing: .18em; font-size: .75rem; text-transform: uppercase; }
+    h1 { margin: .35rem 0 clamp(1.875rem, 3.25vh, 2.5rem); font-size: clamp(3rem, 12vw, 6rem); line-height: .95; letter-spacing: -.07em; }
+    p { max-width: 42ch; margin: 0; font-size: 1.12rem; color: #d8d2dd; }
+    nav {
+      grid-row: 3;
+      align-self: start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 0;
+    }
+    a { color: #f4a9d8; text-underline-offset: .25em; }
+
+    @media (max-width: 600px) {
+      main {
+        width: min(100% - 32px, 680px);
+        padding-block: clamp(.75rem, 2.5svh, 1.5rem);
+        grid-template-rows: 42fr 28fr 30fr;
+      }
+      .intro { transform: translateY(clamp(1.5rem, 4svh, 2.5rem)); }
+      nav { gap: .75rem 1rem; }
+    }
+  </style>
   <link rel="stylesheet" href="assets/ambient-3d.css">
   <link rel="stylesheet" href="assets/biorhythm.css">
   <script src="assets/biorhythm-config.js"></script>
   <script src="assets/biorhythm.js" defer></script>
   <script type="module" src="assets/ambient-3d.js"></script>
-  <script src="assets/app-shell.js" defer></script>
 </head>
 <body>
-  <main id="app-shell">
-    <div id="app-content">
-      <section class="route-top intro" aria-labelledby="page-title">
-        <div class="spark">AtheneIO · online</div>
-        <h1 class="home-title" id="page-title">Hej.</h1>
-        <p>Miejsce na notatki, pomysły i małe eksperymenty, do których chcę wracać.</p>
-      </section>
-      <section class="route-bottom" aria-label="Nawigacja strony">
-        <nav class="site-nav" aria-label="Główna nawigacja"><a data-route href="about.html">O mnie</a><a data-route href="medytacja.html">Medytacja</a><a data-route href="ja-rpg.html">Ja RPG</a><a data-route href="pomysly.html">Pomysły</a><a data-route href="blokg-w-dol-lub-w-bok.html">Blok(g)</a></nav>
-      </section>
-    </div>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="spark">AtheneIO · online</div>
+      <h1 id="page-title">Hej.</h1>
+      <p>Miejsce na notatki, pomysły i małe eksperymenty, do których chcę wracać.</p>
+    </section>
+    <nav aria-label="Główna nawigacja"><a href="about.html">O mnie</a><a href="medytacja.html">Medytacja</a><a href="ja-rpg.html">Ja RPG</a><a href="pomysly.html">Pomysły</a><a href="blokg-w-dol-lub-w-bok.html">Blok(g)</a></nav>
   </main>
 </body>
 </html>

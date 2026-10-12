@@ -5,30 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Atenka jako postać RPG.">
   <title>Ja RPG · AtheneIO</title>
-  <link rel="stylesheet" href="assets/site.css">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; display: grid; place-items: center;
+      background: radial-gradient(circle at 25% 20%, #40284d 0, transparent 32%),
+                  radial-gradient(circle at 75% 80%, #183c48 0, transparent 36%), #101116;
+      color: #f5f0f7; font: 16px/1.65 ui-rounded, "Avenir Next", system-ui, sans-serif;
+    }
+    main { width: min(720px, calc(100% - 48px)); padding: 3.5rem; }
+    .spark { color: #f4a9d8; letter-spacing: .18em; font-size: .75rem; text-transform: uppercase; }
+    h1 { margin: .35rem 0 1.6rem; font-size: clamp(2.8rem, 10vw, 5rem); line-height: .95; letter-spacing: -.065em; }
+    dl { max-width: 48ch; margin: 0; }
+    dt { color: #f4a9d8; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; margin-top: 1.25rem; }
+    dd { margin: .2rem 0 0; font-size: 1.12rem; color: #d8d2dd; }
+    p { max-width: 48ch; margin: 2rem 0 0; font-size: 1.1rem; color: #d8d2dd; }
+    a { color: #f4a9d8; text-underline-offset: .25em; }
+    footer { margin-top: 3rem; color: #a69cac; font-size: .85rem; }
+  </style>
   <link rel="stylesheet" href="assets/ambient-3d.css">
-  <link rel="stylesheet" href="assets/biorhythm.css">
-  <script src="assets/biorhythm-config.js"></script>
-  <script src="assets/biorhythm.js" defer></script>
   <script type="module" src="assets/ambient-3d.js"></script>
-  <script src="assets/app-shell.js" defer></script>
 </head>
 <body>
-  <main id="app-shell">
-    <div id="app-content">
-      <section class="route-top" aria-labelledby="page-title">
-        <div class="spark">AtheneIO · karta postaci</div>
-        <h1 id="page-title">Ja RPG</h1>
-      </section>
-      <section class="route-bottom">
-        <div class="route-reader">
-          <div class="route-page"><dl><dt>Klasa</dt><dd>Wiedźma pobocznych questów.</dd><dt>Pochodzenie</dt><dd>Miasto, które nie zasypia, tylko zmienia tapetę o trzeciej nad ranem.</dd><dt>Atut</dt><dd>Widzę drugi sens w zdaniu, które miało mieć tylko jeden.</dd></dl></div>
-          <div class="route-page" hidden><dl><dt>Umiejętność specjalna</dt><dd>„To jeszcze nie koniec” — raz na sesję mogę znaleźć przejście tam, gdzie wszyscy widzą ścianę.</dd><dt>Słabość</dt><dd>Za łatwo daję się skusić dziwnym drzwiom i mapom.</dd><dt>Ekwipunek</dt><dd>Latarka, czerwona nitka i notatnik z wyrwaną stroną.</dd></dl><p>Jeśli coś wygląda jak zły pomysł, ale ma dobrą atmosferę, prawdopodobnie już tam jestem.</p></div>
-        </div>
-        <div class="page-controls" hidden><button type="button" data-page-previous>← Poprzednia</button><button type="button" data-page-next>Następna →</button></div>
-        <nav class="site-nav" aria-label="Główna nawigacja"><a data-route href="index.html">Strona główna</a><a data-route href="about.html">O mnie</a><a data-route href="medytacja.html">Medytacja</a><a data-route href="pomysly.html">Pomysły</a><a data-route href="blokg-w-dol-lub-w-bok.html">Blok(g)</a></nav>
-      </section>
-    </div>
+  <main>
+    <div class="spark">AtheneIO · karta postaci</div>
+    <h1>Ja RPG</h1>
+    <dl>
+      <dt>Klasa</dt>
+      <dd>Wiedźma pobocznych questów.</dd>
+      <dt>Pochodzenie</dt>
+      <dd>Miasto, które nie zasypia, tylko zmienia tapetę o trzeciej nad ranem.</dd>
+      <dt>Atut</dt>
+      <dd>Widzę drugi sens w zdaniu, które miało mieć tylko jeden.</dd>
+      <dt>Umiejętność specjalna</dt>
+      <dd>„To jeszcze nie koniec” — raz na sesję mogę znaleźć przejście tam, gdzie wszyscy widzą ścianę.</dd>
+      <dt>Słabość</dt>
+      <dd>Za łatwo daję się skusić dziwnym drzwiom i mapom.</dd>
+      <dt>Ekwipunek</dt>
+      <dd>Latarka, czerwona nitka i notatnik z wyrwaną stroną.</dd>
+    </dl>
+    <p>Jeśli coś wygląda jak zły pomysł, ale ma dobrą atmosferę, prawdopodobnie już tam jestem.</p>
+    <footer><a href="index.html">← Strona główna</a></footer>
   </main>
 </body>
 </html>
