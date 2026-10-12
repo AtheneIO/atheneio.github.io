@@ -39,7 +39,8 @@ test('same-document hash links bypass SPA routing and failed route loads replace
   const source = fs.readFileSync(path.join(root, 'assets', 'app-shell.js'), 'utf8');
   assert.match(source, /isSameDocumentHash/);
   assert.match(source, /isSameDocumentHash\(anchor\)\s*\|\|/);
-  assert.match(source, /url\.hash && documentPath\(url\) === renderedDocumentPath/);
+  assert.match(source, /if \(documentPath\(url\) === renderedDocumentPath\) return;/,
+    'popstate skips navigation whenever the rendered document is unchanged, including a URL without a hash');
   assert.match(source, /Nie udało się wczytać zakładki/);
   assert.match(source, /content\.innerHTML = `/);
 });

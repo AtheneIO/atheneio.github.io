@@ -127,7 +127,7 @@
 
   window.addEventListener('popstate', () => {
     const url = new URL(location.href);
-    if (url.hash && documentPath(url) === renderedDocumentPath) return;
+    if (documentPath(url) === renderedDocumentPath) return;
     navigate(url.href);
   });
   activateContent();
