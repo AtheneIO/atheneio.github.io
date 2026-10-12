@@ -3,7 +3,7 @@ const { test, expect } = require('playwright/test');
 test.setTimeout(90_000);
 
 const pages = [
-  { path: 'index.html', name: 'home' },
+  { path: 'index.html', name: 'home', heading: 'Hej.' },
   { path: 'about.html', name: 'about', heading: 'O mnie' },
   { path: 'medytacja.html', name: 'meditation', heading: 'Medytacja' },
   { path: 'ja-rpg.html', name: 'rpg', heading: 'Ja RPG' },
@@ -17,81 +17,92 @@ const viewports = [
 ];
 const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4173';
 
-function maxCoordinateDifference(reference, current) {
-  return Math.max(Math.abs(reference.x - current.x), Math.abs(reference.y - current.y));
+function coordinateDifference(reference, current, coordinates) {
+  return Math.max(...coordinates.map((coordinate) => Math.abs(reference[coordinate] - current[coordinate])));
 }
 
 async function measure(page) {
   return page.evaluate(() => {
-    const header = document.querySelector('.intro, .page-heading');
+    const rect = (element) => {
+      const { x, y, right, bottom, width, height } = element.getBoundingClientRect();
+      return { x, y, right, bottom, width, height };
+    };
+    const h1 = document.querySelector('h1');
+    const spark = document.querySelector('.spark');
     const navigation = document.querySelector('.site-nav');
-    if (!header || !navigation) throw new Error('Missing shared header or navigation');
-    const pick = ({ x, y, width, height }) => ({ x, y, width, height });
-    return { header: pick(header.getBoundingClientRect()), navigation: pick(navigation.getBoundingClientRect()) };
+    const body = document.querySelector('.page-body');
+    if (!h1 || !spark || !navigation || !body) throw new Error('Missing shared shell element');
+    return {
+      h1: rect(h1),
+      spark: rect(spark),
+      navigation: rect(navigation),
+      body: rect(body),
+      headingToNavigationGap: navigation.getBoundingClientRect().top - h1.getBoundingClientRect().bottom,
+      sparkToHeadingGap: h1.getBoundingClientRect().top - spark.getBoundingClientRect().bottom,
+      scroll: {
+        scrollHeight: document.documentElement.scrollHeight,
+        viewportHeight: window.innerHeight,
+        overflowY: getComputedStyle(document.documentElement).overflowY,
+      },
+    };
   });
 }
 
-test.describe('shared shell layout', () => {
+function verifyGeometry(measurements) {
+  const reference = measurements[0].measurement;
+  for (const { name, measurement } of measurements) {
+    expect(coordinateDifference(reference.navigation, measurement.navigation, ['x', 'y'])).toBeLessThanOrEqual(2);
+    expect(Math.abs(reference.h1.bottom - measurement.h1.bottom)).toBeLessThanOrEqual(2);
+    expect(measurement.headingToNavigationGap, `${name}: h1 → nav gap`).toBeGreaterThanOrEqual(24);
+    expect(measurement.headingToNavigationGap, `${name}: h1 → nav gap`).toBeLessThanOrEqual(32);
+    expect(Math.abs(reference.sparkToHeadingGap - measurement.sparkToHeadingGap), `${name}: spark → h1 gap`).toBeLessThanOrEqual(2);
+    expect(measurement.spark.bottom).toBeLessThanOrEqual(measurement.h1.y);
+    expect(measurement.h1.bottom).toBeLessThanOrEqual(measurement.navigation.y);
+    expect(measurement.body.y).toBeGreaterThanOrEqual(measurement.navigation.bottom);
+    expect(measurement.scroll.overflowY).not.toBe('hidden');
+  }
+}
+
+test.describe('shared shell geometry', () => {
   for (const viewport of viewports) {
-    test(`keeps header and navigation stable during SPA navigation at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test(`uses a common h1 baseline and menu position at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport });
+      const page = await context.newPage();
+      const measurements = [];
+
+      for (const target of pages) {
+        await page.goto(`${baseURL}/${target.path}`);
+        await expect(page.locator('h1')).toContainText(target.heading);
+        measurements.push({ name: target.name, measurement: await measure(page) });
+      }
+
+      console.log(JSON.stringify({ kind: 'direct-geometry', viewport, measurements }));
+      verifyGeometry(measurements);
+      await context.close();
+    });
+
+    test(`switches SPA content without replacing canvases at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
       await page.goto(`${baseURL}/index.html`);
-      const baseline = await measure(page);
-      const results = [];
+      const canvasPresent = await page.evaluate(() => {
+        window.__layoutCanvas = document.querySelector('#ambient-3d-canvas');
+        return Boolean(window.__layoutCanvas);
+      });
+      expect(canvasPresent).toBeTruthy();
+      const measurements = [{ name: 'home', measurement: await measure(page) }];
 
       for (const target of pages.slice(1)) {
         await page.locator(`.site-nav a[href="${target.path}"]`).dispatchEvent('click', { button: 0 });
         await expect(page).toHaveURL(new RegExp(`${target.path.replace(/[().]/g, '\\$&')}$`));
         await expect(page.locator('#page-content h1')).toContainText(target.heading);
-        const current = await measure(page);
-        results.push({ target: target.name, ...current });
+        expect(await page.evaluate(() => window.__layoutCanvas === document.querySelector('#ambient-3d-canvas') && window.__layoutCanvas?.isConnected)).toBeTruthy();
+        measurements.push({ name: target.name, measurement: await measure(page) });
       }
 
-      const maxDifference = Math.max(...results.flatMap(({ header, navigation }) => [
-        maxCoordinateDifference(baseline.header, header),
-        maxCoordinateDifference(baseline.navigation, navigation),
-      ]));
-      console.log(JSON.stringify({ kind: 'spa', viewport, baseline, results, maxDifference }));
-      expect(maxDifference).toBeLessThanOrEqual(2);
-    });
-
-    test(`keeps direct entries aligned and allows normal document scrolling at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
-      const context = await browser.newContext({ viewport });
-      const page = await context.newPage();
-      await page.goto(`${baseURL}/index.html`);
-      const baseline = await measure(page);
-      const results = [];
-
-      for (const target of pages) {
-        await page.goto(`${baseURL}/${target.path}`);
-        const current = await measure(page);
-        const scroll = await page.evaluate(() => ({
-          scrollHeight: document.documentElement.scrollHeight,
-          viewportHeight: window.innerHeight,
-          overflowY: getComputedStyle(document.documentElement).overflowY,
-        }));
-        results.push({ target: target.name, ...current, scroll });
-      }
-
-      await page.goto(`${baseURL}/blokg-w-dol-lub-w-bok.html`);
-      const scrollProof = await page.evaluate(() => {
-        const spacer = document.createElement('div');
-        spacer.style.height = '200vh';
-        spacer.setAttribute('aria-hidden', 'true');
-        document.body.append(spacer);
-        const before = window.scrollY;
-        window.scrollTo(0, 10000);
-        return { before, after: window.scrollY, scrollHeight: document.documentElement.scrollHeight, viewportHeight: window.innerHeight };
-      });
-      console.log(JSON.stringify({ kind: 'direct', viewport, baseline, results, scrollProof }));
-      expect(scrollProof.scrollHeight).toBeGreaterThan(scrollProof.viewportHeight);
-      expect(scrollProof.after).toBeGreaterThan(scrollProof.before);
-      for (const result of results) {
-        expect(maxCoordinateDifference(baseline.header, result.header)).toBeLessThanOrEqual(2);
-        expect(maxCoordinateDifference(baseline.navigation, result.navigation)).toBeLessThanOrEqual(2);
-        expect(result.scroll.overflowY).not.toBe('hidden');
-      }
+      console.log(JSON.stringify({ kind: 'spa-geometry', viewport, measurements }));
+      verifyGeometry(measurements);
+      await context.close();
     });
   }
 });

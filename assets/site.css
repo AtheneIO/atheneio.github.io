@@ -10,12 +10,12 @@ body {
   font: 16px/1.6 ui-rounded, "Avenir Next", system-ui, sans-serif;
 }
 .site-shell {
-  --site-header-space: clamp(15rem, 25svh, 17rem);
+  --site-heading-space: clamp(15rem, 25svh, 17rem);
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--site-header-space) auto minmax(0, 1fr);
+  grid-template-rows: var(--site-heading-space) auto minmax(0, 1fr);
   width: min(720px, calc(100% - 48px));
   min-height: 100vh;
   min-height: 100svh;
@@ -26,13 +26,13 @@ body {
 .intro,
 .page-heading {
   grid-row: 1;
-  align-self: start;
+  align-self: end;
 }
 .page-body { grid-row: 3; }
 .spark { color: #f4a9d8; letter-spacing: .18em; font-size: .75rem; text-transform: uppercase; }
 a.spark { display: block; text-decoration: none; }
-h1 { margin: .35rem 0 1.6rem; font-size: clamp(2.8rem, 10vw, 5rem); line-height: .95; letter-spacing: -.065em; }
-.page-home h1 { margin: .35rem 0 clamp(1.875rem, 3.25vh, 2.5rem); font-size: clamp(3rem, 12vw, 6rem); letter-spacing: -.07em; }
+h1 { margin: .35rem 0 0; font-size: clamp(2.8rem, 10vw, 5rem); line-height: .95; letter-spacing: -.065em; }
+.page-home h1 { margin: .35rem 0 0; font-size: clamp(3rem, 12vw, 6rem); letter-spacing: -.07em; }
 p { max-width: 48ch; margin: 0 0 1.15rem; font-size: 1.1rem; color: #d8d2dd; }
 .page-home p { max-width: 42ch; margin: 0; font-size: 1.12rem; }
 a { color: #f4a9d8; text-underline-offset: .25em; }
@@ -41,7 +41,7 @@ a { color: #f4a9d8; text-underline-offset: .25em; }
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin: 0 0 2rem;
+  margin: 1.75rem 0 2rem;
 }
 .portrait {
   display: block; width: min(260px, 100%); height: auto;
