@@ -3,6 +3,7 @@
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (reduceMotion.matches) return;
+  if (window.__atheneBiorhythm) return;
 
   const endpointFromQuery = new URLSearchParams(location.search).get('biorhythmEndpoint');
   const endpoint = endpointFromQuery || window.ATHENE_BIORHYTHM_ENDPOINT;
@@ -14,9 +15,13 @@
   if (!ctx) return;
 
   const mobile = window.matchMedia('(pointer: coarse)').matches;
+  const cores = navigator.hardwareConcurrency;
+  const memory = navigator.deviceMemory;
+  const lowPower = mobile && ((cores > 0 && cores <= 4) || (memory > 0 && memory <= 4));
+  const frameInterval = lowPower ? 1000 / 30 : 0;
   const target = { session: .5, weekly: .5, freshness: 0, synced: false };
   const state = { ...target };
-  let width = 1, height = 1, dpr = 1, frame = 0, lastFetch = 0, lastGood = 0;
+  let width = 1, height = 1, dpr = 1, frame = 0, drawTimer = 0, resizeFrame = 0, hasRendered = false, lastFetch = 0, lastGood = 0;
   let paused = document.hidden;
   // Transport cadence and display health are intentionally separate:
   // Pages polls more often than publication, while a sample remains usable
@@ -57,22 +62,42 @@
   }
 
   function resize() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.2 : 1.5);
+    const nextWidth = window.innerWidth;
+    const nextHeight = window.innerHeight;
+    const nextDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1 : mobile ? 1.2 : 1.5);
+    if (nextWidth === width && nextHeight === height && nextDpr === dpr) return;
+    width = nextWidth;
+    height = nextHeight;
+    dpr = nextDpr;
     canvas.width = Math.max(1, Math.floor(width * dpr));
     canvas.height = Math.max(1, Math.floor(height * dpr));
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function requestResize() {
+    if (resizeFrame) return;
+    resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; resize(); });
+  }
+
+  function requestDraw() {
+    if (paused || frame || drawTimer) return;
+    if (frameInterval && hasRendered) {
+      drawTimer = setTimeout(() => {
+        drawTimer = 0;
+        frame = requestAnimationFrame(draw);
+      }, frameInterval);
+      return;
+    }
+    frame = requestAnimationFrame(draw);
   }
 
   // Non-linear deterministic mapping: the two quotas are phase inputs to a small
   // oscillator field, not hidden progress bars. Session shapes motion; week shapes
   // harmonic count, spatial density and palette spread.
   function draw(now) {
+    frame = 0;
     if (paused) return;
-    frame = requestAnimationFrame(draw);
+    hasRendered = true;
     const dt = Math.min(.08, (now - (draw.previous || now)) / 1000);
     draw.previous = now;
     const glide = 1 - Math.exp(-dt * 1.65);
@@ -144,14 +169,25 @@
       lastFetch = now;
       fetchData();
     }
+    requestDraw();
   }
 
   document.addEventListener('visibilitychange', () => {
     paused = document.hidden;
-    if (!paused) { lastFetch = -pollIntervalMs; frame = requestAnimationFrame(draw); }
+    if (paused) {
+      if (frame) cancelAnimationFrame(frame);
+      if (drawTimer) clearTimeout(drawTimer);
+      frame = 0;
+      drawTimer = 0;
+      return;
+    }
+    lastFetch = -pollIntervalMs;
+    requestDraw();
   });
-  window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('resize', requestResize, { passive: true });
+  window.addEventListener('orientationchange', requestResize, { passive: true });
+  window.__atheneBiorhythm = { canvas };
   resize();
   fetchData();
-  frame = requestAnimationFrame(draw);
+  requestDraw();
 })();

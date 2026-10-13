@@ -81,22 +81,25 @@ test.describe('shared shell geometry', () => {
       await context.close();
     });
 
-    test(`switches SPA content without replacing canvases at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
+    test(`switches SPA content without replacing background canvases at ${viewport.width}x${viewport.height}`, async ({ browser }) => {
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
       await page.goto(`${baseURL}/index.html`);
-      const canvasPresent = await page.evaluate(() => {
-        window.__layoutCanvas = document.querySelector('#ambient-3d-canvas');
-        return Boolean(window.__layoutCanvas);
+      const canvasesPresent = await page.evaluate(() => {
+        window.__layoutCanvases = [
+          document.querySelector('#ambient-3d-canvas'),
+          document.querySelector('#athene-biorhythm'),
+        ];
+        return window.__layoutCanvases.every(Boolean);
       });
-      expect(canvasPresent).toBeTruthy();
+      expect(canvasesPresent).toBeTruthy();
       const measurements = [{ name: 'home', measurement: await measure(page) }];
 
       for (const target of pages.slice(1)) {
         await page.locator(`.site-nav a[href="${target.path}"]`).dispatchEvent('click', { button: 0 });
         await expect(page).toHaveURL(new RegExp(`${target.path.replace(/[().]/g, '\\$&')}$`));
         await expect(page.locator('#page-content h1')).toContainText(target.heading);
-        expect(await page.evaluate(() => window.__layoutCanvas === document.querySelector('#ambient-3d-canvas') && window.__layoutCanvas?.isConnected)).toBeTruthy();
+        expect(await page.evaluate(() => window.__layoutCanvases.every((canvas) => canvas === document.getElementById(canvas.id) && canvas.isConnected))).toBeTruthy();
         measurements.push({ name: target.name, measurement: await measure(page) });
       }
 

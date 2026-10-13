@@ -20,10 +20,11 @@ function sample(now, five, weekly) {
   };
 }
 
-async function harness({ coarse = false, width = 1280, dpr = 2, samples }) {
+async function harness({ coarse = false, width = 1280, dpr = 2, hardwareConcurrency = 8, deviceMemory = 8, samples }) {
   let clock = 1_790_000_000_000;
   const fetches = [];
   const frames = [];
+  const timers = [];
   const ctx = {
     fillRects: 0, arcs: 0, transforms: [],
     clearRect() {}, save() {}, restore() {}, beginPath() {}, fill() {},
@@ -52,8 +53,11 @@ async function harness({ coarse = false, width = 1280, dpr = 2, samples }) {
   };
   const sandbox = {
     window, document, location: { search: '' }, URLSearchParams,
-    Date: FakeDate, Math, Number, Error, Promise, console,
+    navigator: { hardwareConcurrency, deviceMemory }, Date: FakeDate, Math, Number, Error, Promise, console,
     requestAnimationFrame(callback) { frames.push(callback); return frames.length; },
+    cancelAnimationFrame(id) { frames[id - 1] = null; },
+    setTimeout(callback) { timers.push(callback); return timers.length; },
+    clearTimeout(id) { timers[id - 1] = null; },
     fetch: async (url, options) => {
       fetches.push({ url, options });
       const body = samples.shift();
@@ -66,7 +70,7 @@ async function harness({ coarse = false, width = 1280, dpr = 2, samples }) {
   await new Promise(setImmediate); // fetch() then response.json() are separate async turns
 
   function draw(now) {
-    const callbacks = frames.splice(0);
+    const callbacks = frames.splice(0).filter(Boolean);
     assert.equal(callbacks.length, 1, 'exactly one animation frame should be pending');
     callbacks[0](now);
   }
@@ -80,7 +84,8 @@ async function harness({ coarse = false, width = 1280, dpr = 2, samples }) {
     setClock(value) { clock = value; },
     setHidden(value) { document.hidden = value; },
     dispatchVisibilityChange() { listeners.visibilitychange(); },
-    pendingFrames() { return frames.length; },
+    pendingFrames() { return frames.filter(Boolean).length; },
+    pendingTimers() { return timers.filter(Boolean).length; },
   };
 }
 
@@ -110,7 +115,7 @@ test('exhaustion → reset changes the oscillator field after a fresh JSON revis
   assert.notEqual(h.fetches[0].url, h.fetches[1].url, 'successive reads must not reuse a cached URL');
 });
 
-test('visibility restore resumes animation and immediately refreshes biorhythm data', async () => {
+test('visibility changes keep one animation frame and refresh biorhythm data on restore', async () => {
   const start = 1_790_000_000_000;
   const h = await harness({
     samples: [sample(start, 20, 30), sample(start + 1_000, 80, 90)],
@@ -118,13 +123,12 @@ test('visibility restore resumes animation and immediately refreshes biorhythm d
 
   h.setHidden(true);
   h.dispatchVisibilityChange();
-  h.draw(0);
-  assert.equal(h.pendingFrames(), 0, 'hidden tab must stop animation scheduling');
+  assert.equal(h.pendingFrames(), 0, 'hidden tab must cancel the queued animation frame');
 
   h.setClock(start + 1_000);
   h.setHidden(false);
   assert.doesNotThrow(() => h.dispatchVisibilityChange(), 'returning to the tab must not throw a ReferenceError');
-  assert.equal(h.pendingFrames(), 1, 'visible tab must resume animation');
+  assert.equal(h.pendingFrames(), 1, 'visible tab must resume exactly one animation frame');
   h.draw(1_000);
   await new Promise(setImmediate);
 
@@ -149,6 +153,18 @@ test('freshness remains synced through the publication interval and turns stale 
     assert.equal(h.target.freshness, freshness, `${minutes}-minute sample freshness`);
     assert.equal(h.target.synced, synced, `${minutes}-minute sample sync status`);
   }
+});
+
+test('low-power mobile delays the next animation callback to cap work at 30 FPS', async () => {
+  const now = 1_790_000_000_000;
+  const h = await harness({
+    coarse: true, hardwareConcurrency: 4, deviceMemory: 4,
+    samples: [sample(now, 50, 50)],
+  });
+
+  h.draw(0);
+  assert.equal(h.pendingFrames(), 0, 'low-power mode must not keep a 60 FPS rAF callback queued');
+  assert.equal(h.pendingTimers(), 1, 'low-power mode must wait before scheduling the next rAF callback');
 });
 
 test('Node simulation: mobile rendering limits DPR and reduces field density', async () => {
